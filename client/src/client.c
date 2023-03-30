@@ -7,28 +7,24 @@ int main(void)
 	int conexion;
 	char* ip;
 	char* puerto;
-	char* valor;
+	char* clave;
 
 	t_log* logger;
 	t_config* config;
 
-	/* ---------------- LOGGING ---------------- */
-
 	logger = iniciar_logger();
-
-	// Usando el logger creado previamente
-	// Escribi: "Hola! Soy un log"
-
+	log_info(logger, "Soy un Log");
 
 	/* ---------------- ARCHIVOS DE CONFIGURACION ---------------- */
 
 	config = iniciar_config();
 
-	// Usando el config creado previamente, leemos los valores del config y los 
-	// dejamos en las variables 'ip', 'puerto' y 'valor'
+	clave = config_get_string_value(config, "CLAVE");
+	ip = config_get_string_value(config, "IP");
+	puerto = config_get_string_value(config, "PUERTO");
 
-	// Loggeamos el valor de config
-
+	log_info(logger, "Se han obtenido del archivo de configuracion los siguientes valores:\n");
+	log_info(logger, "ip %s, puerto %s y clave \%sn", ip, puerto, clave);
 
 	/* ---------------- LEER DE CONSOLA ---------------- */
 
@@ -54,14 +50,22 @@ int main(void)
 
 t_log* iniciar_logger(void)
 {
-	t_log* nuevo_logger;
-
-	return nuevo_logger;
+	t_log *logger;
+	if (( logger = log_create("tp0.log", "logs", true, LOG_LEVEL_INFO)) == NULL ) {
+		printf("No se pudo crear logger\n");
+		exit(1);
+	}
+	return logger;
 }
 
 t_config* iniciar_config(void)
 {
 	t_config* nuevo_config;
+
+	if (config_create("../cliente.config")) {
+		printf("No se pudo crear logger\n");
+		exit(1);
+	}
 
 	return nuevo_config;
 }
@@ -95,6 +99,11 @@ void paquete(int conexion)
 
 void terminar_programa(int conexion, t_log* logger, t_config* config)
 {
-	/* Y por ultimo, hay que liberar lo que utilizamos (conexion, log y config) 
-	  con las funciones de las commons y del TP mencionadas en el enunciado */
+	if (logger != NULL) {
+		log_destroy(logger);
+	}
+
+	if (config != NULL) {
+		config_destroy(config);
+	}
 }
