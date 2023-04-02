@@ -1,9 +1,8 @@
 #include "client.h"
+#define ENTER "\n"
 
 int main(void)
 {
-	/*---------------------------------------------------PARTE 2-------------------------------------------------------------*/
-
 	int conexion;
 	char* ip;
 	char* puerto;
@@ -13,46 +12,39 @@ int main(void)
 	t_config* config;
 
 	logger = iniciar_logger();
-	log_info(logger, "Soy un Log");
 
 	/* ---------------- ARCHIVOS DE CONFIGURACION ---------------- */
 
+	log_info(logger, getcwd(NULL, 0));
 	config = iniciar_config();
 
 	clave = config_get_string_value(config, "CLAVE");
 	ip = config_get_string_value(config, "IP");
 	puerto = config_get_string_value(config, "PUERTO");
 
-	log_info(logger, "Se han obtenido del archivo de configuracion los siguientes valores:\n");
-	log_info(logger, "ip %s, puerto %s y clave \%sn", ip, puerto, clave);
+	log_info(logger, "Se han obtenido del archivo de configuracion los siguientes valores:", ENTER);
+	log_info(logger, "ip %s, puerto %s y clave \%s\n", ip, puerto, clave);
 
 	/* ---------------- LEER DE CONSOLA ---------------- */
-
 	leer_consola(logger);
-
-	/*---------------------------------------------------PARTE 3-------------------------------------------------------------*/
-
-	// ADVERTENCIA: Antes de continuar, tenemos que asegurarnos que el servidor esté corriendo para poder conectarnos a él
 
 	// Creamos una conexión hacia el servidor
 	conexion = crear_conexion(ip, puerto);
 
 	// Enviamos al servidor el valor de CLAVE como mensaje
+	enviar_mensaje(clave, conexion);
 
 	// Armamos y enviamos el paquete
 	paquete(conexion);
 
 	terminar_programa(conexion, logger, config);
-
-	/*---------------------------------------------------PARTE 5-------------------------------------------------------------*/
-	// Proximamente
 }
 
 t_log* iniciar_logger(void)
 {
 	t_log *logger;
-	if (( logger = log_create("tp0.log", "logs", true, LOG_LEVEL_INFO)) == NULL ) {
-		printf("No se pudo crear logger\n");
+	if (( logger = log_create("client.log", "logs", true, LOG_LEVEL_INFO)) == NULL ) {
+		printf("No se pudo crear logger", ENTER);
 		exit(1);
 	}
 	return logger;
@@ -61,9 +53,8 @@ t_log* iniciar_logger(void)
 t_config* iniciar_config(void)
 {
 	t_config* nuevo_config;
-
-	if (config_create("../cliente.config")) {
-		printf("No se pudo crear logger\n");
+	if ((nuevo_config = config_create("./cliente.config")) == NULL) {
+		printf("No se pudo crear logger", ENTER);
 		exit(1);
 	}
 
@@ -72,29 +63,42 @@ t_config* iniciar_config(void)
 
 void leer_consola(t_log* logger)
 {
-	char* leido;
+	printf("Los siguientes valores que ingresen se guardaran en el log client.log, ingrese enter para terminar de ingresar valores\n");
+	char* linea;
 
-	// La primera te la dejo de yapa
-	leido = readline("> ");
-
-	// El resto, las vamos leyendo y logueando hasta recibir un string vacío
-
-
-	// ¡No te olvides de liberar las lineas antes de regresar!
-
+	while(1) {
+		linea = readline("> ");
+		if (strcmp(linea, "") == 0) {
+			break;
+		}
+		log_info(logger, linea, ENTER);
+		free(linea);
+	}
 }
 
 void paquete(int conexion)
 {
-	// Ahora toca lo divertido!
-	char* leido;
 	t_paquete* paquete;
+	char* lineaPaquete;
+
+	if(!(paquete = crear_paquete())) {
+		printf("Error al crear paquete");
+	}
 
 	// Leemos y esta vez agregamos las lineas al paquete
+	printf("Los siguientes valores que ingreses se enviaran al servidor, ingrese enter para terminar de ingresar valores\n");
 
+	while(1) {
+		lineaPaquete = readline("> ");
+		if (strcmp(lineaPaquete, "") == 0) {
+			break;
+		}
+		agregar_a_paquete(paquete, lineaPaquete, strlen(lineaPaquete)+1);
+		free(lineaPaquete);
+	}
 
-	// ¡No te olvides de liberar las líneas y el paquete antes de regresar!
-	
+	enviar_paquete(paquete, conexion);
+	eliminar_paquete(paquete);
 }
 
 void terminar_programa(int conexion, t_log* logger, t_config* config)
@@ -106,4 +110,6 @@ void terminar_programa(int conexion, t_log* logger, t_config* config)
 	if (config != NULL) {
 		config_destroy(config);
 	}
+
+	liberar_conexion(conexion);
 }
