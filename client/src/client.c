@@ -1,37 +1,40 @@
 #include "client.h"
 #define ENTER "\n"
+#define SIGN_CONSOLA "> "
 
-int main(void)
+int main(int argc, char** argv)
 {
+	// Comentar este if si se quiere tomar los valores por defecto
+	if (argc<2) {
+		printf("BAD REQUEST: Enviar dos parametros\n");
+		printf("Parametros enviados: %d\n", argc);
+		for(int i=0; i<argc; i++) {
+			printf("%s\n", argv[i]);
+		}
+		return EXIT_FAILURE;
+	}
+
+	// Se setean los parametros que se pasan, con poner valores por defecto
+	char* rutaConfig = argv[1] ? argv[1] : "./cliente.config";
+	char* rutaInstrucciones = argv[2] ? argv[2] : "";
+	char* rutaLog = argv[3] ?  argv[3] : "./client.log";
+
 	int conexion;
-	char* ip;
-	char* puerto;
 	char* clave;
 
 	t_log* logger;
 	t_config* config;
 
-	logger = iniciar_logger();
+	logger = iniciar_logger(rutaLog);
+	config = iniciar_config(rutaConfig);
 
-	/* ---------------- ARCHIVOS DE CONFIGURACION ---------------- */
-
-	log_info(logger, getcwd(NULL, 0));
-	config = iniciar_config();
-
-	clave = config_get_string_value(config, "CLAVE");
-	ip = config_get_string_value(config, "IP");
-	puerto = config_get_string_value(config, "PUERTO");
-
-	log_info(logger, "Se han obtenido del archivo de configuracion los siguientes valores:", ENTER);
-	log_info(logger, "ip %s, puerto %s y clave \%s\n", ip, puerto, clave);
-
-	/* ---------------- LEER DE CONSOLA ---------------- */
 	leer_consola(logger);
 
 	// Creamos una conexión hacia el servidor
-	conexion = crear_conexion(ip, puerto);
+	conexion = armar_conexion(config, logger);
 
 	// Enviamos al servidor el valor de CLAVE como mensaje
+	clave = config_get_string_value(config, "CLAVE");
 	enviar_mensaje(clave, conexion);
 
 	// Armamos y enviamos el paquete
@@ -40,20 +43,20 @@ int main(void)
 	terminar_programa(conexion, logger, config);
 }
 
-t_log* iniciar_logger(void)
+t_log* iniciar_logger(char* rutaLog)
 {
 	t_log *logger;
-	if (( logger = log_create("client.log", "logs", true, LOG_LEVEL_INFO)) == NULL ) {
+	if (( logger = log_create(rutaLog, "logs", true, LOG_LEVEL_INFO)) == NULL ) {
 		printf("No se pudo crear logger", ENTER);
 		exit(1);
 	}
 	return logger;
 }
 
-t_config* iniciar_config(void)
+t_config* iniciar_config(char* rutaConfig)
 {
 	t_config* nuevo_config;
-	if ((nuevo_config = config_create("./cliente.config")) == NULL) {
+	if ((nuevo_config = config_create(rutaConfig)) == NULL) {
 		printf("No se pudo crear logger", ENTER);
 		exit(1);
 	}
@@ -63,11 +66,11 @@ t_config* iniciar_config(void)
 
 void leer_consola(t_log* logger)
 {
-	printf("Los siguientes valores que ingresen se guardaran en el log client.log, ingrese enter para terminar de ingresar valores\n");
+	printf("Los siguientes valores que ingresen se guardaran en el log, ingrese enter para terminar de ingresar valores\n");
 	char* linea;
 
 	while(1) {
-		linea = readline("> ");
+		linea = readline(SIGN_CONSOLA);
 		if (strcmp(linea, "") == 0) {
 			break;
 		}
@@ -89,7 +92,7 @@ void paquete(int conexion)
 	printf("Los siguientes valores que ingreses se enviaran al servidor, ingrese enter para terminar de ingresar valores\n");
 
 	while(1) {
-		lineaPaquete = readline("> ");
+		lineaPaquete = readline(SIGN_CONSOLA);
 		if (strcmp(lineaPaquete, "") == 0) {
 			break;
 		}
@@ -112,4 +115,15 @@ void terminar_programa(int conexion, t_log* logger, t_config* config)
 	}
 
 	liberar_conexion(conexion);
+}
+
+int armar_conexion(t_config* config, t_log* logger)
+{
+	char* ip = config_get_string_value(config, "IP");
+	char* puerto = config_get_string_value(config, "PUERTO");
+
+	log_info(logger, "Se va a hacer la conexion con los siguientes valores:", ENTER);
+	log_info(logger, "ip %s, puerto %s\n", ip, puerto);
+
+	return crear_conexion(ip, puerto);
 }
