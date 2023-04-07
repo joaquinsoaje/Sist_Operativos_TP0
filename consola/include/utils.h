@@ -1,6 +1,11 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+
+#define DEFAULT_CONFIG_PATH "./cliente.config"
+#define DEFAULT_INSTRUCCIONES_PATH "instrucciones.txt"
+#define DEFAULT_LOG_PATH "./logs/client.log"
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<signal.h>
@@ -9,6 +14,7 @@
 #include<netdb.h>
 #include<string.h>
 #include<commons/log.h>
+#include<../../shared/constantes.h>
 
 typedef enum
 {

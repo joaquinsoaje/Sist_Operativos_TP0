@@ -1,0 +1,11 @@
+kernel/Debug
+consola/Debug
+cpu/Debug
+file_system/Debug
+memoria/Debug
+*.log
+*.cproject
+*.project
+*.xml
+
+
